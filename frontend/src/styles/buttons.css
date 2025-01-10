@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer components {
+  .white-bg-btn {
+    @apply w-[94px] h-[35px] flex flex-row justify-center items-center gap-[10px] 
+           px-[23px] py-[7px] rounded-[8px] border border-[rgba(21,61,82,0.2)] 
+           bg-white text-black;
+  }
+  .blue-bg-btn {
+    @apply w-[94px] h-[35px] flex flex-row justify-center items-center gap-[10px] 
+           px-[23px] py-[17px] rounded-[8px] border border-[rgba(21,61,82,0.2)] 
+           bg-blue-800;
+  }
+}
