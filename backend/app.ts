@@ -1,12 +1,12 @@
 import express, { Express } from "express";
-import routes from "./routes/index";
+import auth from "./routes/index";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "passport";
 import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
-import "./config/passport/googleStrategy";
-import "./config/passport/localStrategy";
+import "./config/passport";
+import errorHandler from "./middlewares/errorHandler";
 
 export function createApp(): Express {
   const app: Express = express();
@@ -14,14 +14,18 @@ export function createApp(): Express {
   app.use(cookieParser("helloworld"));
   app.use(
     session({
-      secret: process.env.SESSION_SECRET_KEY || "defaultSecretKey",
+      secret: process.env.SESSION_SECRET_KEY as string,
       saveUninitialized: false,
       resave: false,
       cookie: {
-        maxAge: 60000 * 60,
+        maxAge: 60000 * 60, // 1 hour
+        secure: process.env.NODE_ENV === "production", // Set to true in production
+        httpOnly: true, // Prevents client-side JS from accessing the cookie
+        sameSite: "lax", // Helps protect against CSRF
       },
       store: MongoStore.create({
-        client: mongoose.connection.getClient(),
+        mongoUrl: process.env.MONGO_URI as string,
+        // Additional store options if needed
       }),
     })
   );
@@ -29,7 +33,7 @@ export function createApp(): Express {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  app.use("/api/v1", routes);
-
+  app.use("/api/v1", auth);
+  app.use(errorHandler);
   return app;
 }

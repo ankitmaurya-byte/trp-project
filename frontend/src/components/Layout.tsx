@@ -15,7 +15,7 @@ const Layout = () => {
           <div onClick={() => navigate("/login")}>
             <TrpButton type="white">sign in</TrpButton>
           </div>
-          <div>
+          <div onClick={() => navigate("/register")}>
             <TrpButton type="blue">signup</TrpButton>
           </div>
         </div>
