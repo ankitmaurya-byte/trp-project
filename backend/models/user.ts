@@ -4,35 +4,31 @@ import bcrypt from "bcryptjs";
 
 export interface IUser extends Document {
   username: string;
-  email: string;
-  password?: string; // Optional for OAuth users
+  email?: string;
+  password?: string;
   googleId?: string;
   githubId?: string;
   linkedinId?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  role: "admin" | "recruiter" | "candidate";
   comparePassword(candidatePassword: string): Promise<boolean>;
-  // Add other fields and methods as needed
 }
 
 const UserSchema: Schema<IUser> = new Schema(
   {
     username: { type: String, required: true },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address."],
-    },
+    email: { type: String, unique: true, sparse: true },
     password: { type: String },
-    googleId: { type: String, index: true },
-    githubId: { type: String, index: true },
-    linkedinId: { type: String, index: true },
-    // Add other fields as needed
+    googleId: { type: String },
+    githubId: { type: String },
+    linkedinId: { type: String },
+    role: {
+      type: String,
+      enum: ["admin", "recruiter", "candidate"],
+      default: "candidate",
+    },
   },
   { timestamps: true }
 );
-
 // Pre-save hook to hash password
 UserSchema.pre<IUser>("save", async function (next) {
   if (!this.isModified("password")) return next();

@@ -4,7 +4,7 @@ import { ErrorHandler as errorhandler } from "../utils/errorhandler";
 export default (err: any, req: Request, res: Response, next: NextFunction) => {
   console.log(err);
   // err.statuscode = err.statuscode || 404
-  console.log("this is rerr");
+  console.log("this is error");
   console.log(err);
   err.message = err.message || "Invalid server err";
 

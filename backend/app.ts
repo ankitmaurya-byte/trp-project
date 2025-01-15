@@ -1,5 +1,7 @@
 import express, { Express } from "express";
-import auth from "./routes/index";
+import auth from "./routes/authRoutes";
+import candidates from "./routes/candidateRoutes";
+import jobRoutes from "./routes/jobRoutes";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "passport";
@@ -33,7 +35,9 @@ export function createApp(): Express {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  app.use("/api/v1", auth);
+  app.use("/api/v1/auth", auth);
+  app.use("/api/v1", candidates);
+  app.use("/api/v1", jobRoutes);
   app.use(errorHandler);
   return app;
 }

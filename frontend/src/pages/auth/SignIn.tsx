@@ -29,7 +29,7 @@ const SignIn = () => {
       });
 
       if (response.ok) {
-        navigate("/home");
+        navigate("/");
       }
     } catch (error) {
       console.error("Login failed:", error);

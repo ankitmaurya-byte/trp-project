@@ -1,238 +1,178 @@
-// backend/routes/auth.ts
+// backend/controllers/authController.ts
 import express, { Request, Response, NextFunction } from "express";
 import passport from "../config/passport";
 import { body, validationResult } from "express-validator";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import logger from "../utils/logger";
-import User from "../models/User"; // Changed casing to match file system
+import User from "../models/User";
 
 dotenv.config();
-
-const router = express.Router();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // Rate limiter for registration route
 const registerLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 registration requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message:
     "Too many registration attempts from this IP, please try again after 15 minutes",
 });
 
 // Rate limiter for login route
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 login requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message:
     "Too many login attempts from this IP, please try again after 15 minutes",
 });
 
-/**
- * REGISTER ROUTE
- */
-router.post(
-  "/register",
-  registerLimiter,
-  [
-    body("username")
-      .trim()
-      .notEmpty()
-      .withMessage("Username is required.")
-      .isLength({ min: 3 })
-      .withMessage("Username must be at least 3 characters long."),
-    body("email")
-      .trim()
-      .notEmpty()
-      .withMessage("Email is required.")
-      .isEmail()
-      .withMessage("Please provide a valid email address.")
-      .normalizeEmail(),
-    body("password")
-      .notEmpty()
-      .withMessage("Password is required.")
-      .isLength({ min: 6 })
-      .withMessage("Password must be at least 6 characters long."),
-  ],
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(
-        `Registration validation failed: ${JSON.stringify(errors.array())}`
-      );
-      res.status(400).json({ errors: errors.array() });
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.warn(
+      `Registration validation failed: ${JSON.stringify(errors.array())}`
+    );
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
+
+  const { username, email, password } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      logger.warn(`Registration attempt with existing email: ${email}`);
+      res.status(400).json({ message: "Email is already in use." });
       return;
     }
 
-    const { username, email, password } = req.body;
+    const newUser = new User({ username, email, password });
+    await newUser.save();
 
-    try {
-      // Check if user already exists
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        logger.warn(`Registration attempt with existing email: ${email}`);
-        res.status(400).json({ message: "Email is already in use." });
+    req.logIn(newUser, (err: Error) => {
+      if (err) {
+        logger.error(`Login error after registration: ${err}`);
+        next(err);
         return;
       }
 
-      // Create new user
-      const newUser = new User({ username, email, password });
-      await newUser.save();
+      const userResponse = {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+      };
 
-      // Optionally, log the user in immediately after registration
-      req.logIn(newUser, (err: Error) => {
-        if (err) {
-          logger.error(`Login error after registration: ${err}`);
-          next(err);
-          return;
-        }
-
-        // Exclude sensitive information
-        const userResponse = {
-          id: newUser._id,
-          username: newUser.username,
-          email: newUser.email,
-          // Add other non-sensitive fields as needed
-        };
-
-        logger.info(`New user registered and logged in: ${email}`);
-        res
-          .status(201)
-          .json({ message: "Registered successfully", user: userResponse });
-      });
-    } catch (err) {
-      logger.error(`Registration error: ${err}`);
-      next(err);
-      return;
-    }
+      logger.info(`New user registered and logged in: ${email}`);
+      res
+        .status(201)
+        .json({ message: "Registered successfully", user: userResponse });
+    });
+  } catch (err) {
+    logger.error(`Registration error: ${err}`);
+    next(err);
+    return;
   }
-);
+};
 
-/**
- * LOCAL AUTHENTICATION
- */
-router.post(
-  "/login",
-  loginLimiter,
-  [
-    body("email").isEmail().withMessage("Please provide a valid email."),
-    body("password").notEmpty().withMessage("Password is required."),
-  ],
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(`Login validation failed: ${JSON.stringify(errors.array())}`);
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.warn(`Login validation failed: ${JSON.stringify(errors.array())}`);
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
 
-    passport.authenticate(
-      "local",
-      (err: Error, user: any, info: { message: string }) => {
-        if (err) {
-          logger.error(`Authentication error: ${err}`);
-          next(err);
-          return;
-        }
-        if (!user) {
-          logger.warn(`Authentication failed: ${info.message}`);
-          res.status(400).json({ message: info.message });
-          return;
-        }
-        req.logIn(user, (err: Error) => {
-          if (err) {
-            logger.error(`Login error: ${err}`);
-            next(err);
-            return;
-          }
-          // Exclude sensitive information
-          const userResponse = {
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            // Add other non-sensitive fields as needed
-          };
-          logger.info(`User logged in: ${user.email}`);
-          res
-            .status(200)
-            .json({ message: "Logged in successfully", user: userResponse });
-        });
+  passport.authenticate(
+    "local",
+    (err: Error, user: any, info: { message: string }) => {
+      if (err) {
+        logger.error(`Authentication error: ${err}`);
+        next(err);
+        return;
       }
-    )(req, res, next);
-  }
-);
+      if (!user) {
+        logger.warn(`Authentication failed: ${info.message}`);
+        res.status(400).json({ message: info.message });
+        return;
+      }
+      req.logIn(user, (err: Error) => {
+        if (err) {
+          logger.error(`Login error: ${err}`);
+          next(err);
+          return;
+        }
+        const userResponse = {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+        };
+        logger.info(`User logged in: ${user.email}`);
+        res
+          .status(200)
+          .json({ message: "Logged in successfully", user: userResponse });
+      });
+    }
+  )(req, res, next);
+};
 
-/**
- * GOOGLE AUTHENTICATION
- */
-router.get(
-  "/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-    prompt: "select_account",
-  })
-);
+export const googleAuth = passport.authenticate("google", {
+  scope: ["profile", "email"],
+  prompt: "select_account",
+});
 
-router.get(
-  "/google/callback",
+export const googleCallback = [
   passport.authenticate("google", {
     failureRedirect: `${FRONTEND_URL}/login`,
     failureMessage: true,
     session: true,
   }),
   (req: Request, res: Response) => {
-    // Successful authentication, redirect to frontend
     res.redirect(FRONTEND_URL);
-  }
-);
+  },
+];
 
-/**
- * GITHUB AUTHENTICATION
- */
-router.get(
-  "/github",
-  passport.authenticate("github", { scope: ["user:email"] })
-);
+export const githubAuth = passport.authenticate("github", {
+  scope: ["user:email"],
+});
 
-router.get(
-  "/github/callback",
+export const githubCallback = [
   passport.authenticate("github", {
     failureRedirect: `${FRONTEND_URL}/login`,
     failureMessage: true,
     session: true,
   }),
   (req: Request, res: Response) => {
-    // Successful authentication, redirect to frontend
     res.redirect(FRONTEND_URL);
-  }
-);
+  },
+];
 
-/**
- * LINKEDIN AUTHENTICATION
- */
-router.get(
-  "/linkedin",
-  passport.authenticate("linkedin", { state: "DCEeFWf45A53sdfKef424" }) // Replace with dynamic state if needed
-);
+export const linkedinAuth = passport.authenticate("linkedin");
 
-router.get(
-  "/linkedin/callback",
+export const linkedinCallback = [
   passport.authenticate("linkedin", {
     failureRedirect: `${FRONTEND_URL}/login`,
     failureMessage: true,
     session: true,
   }),
   (req: Request, res: Response) => {
-    // Successful authentication, redirect to frontend
     res.redirect(FRONTEND_URL);
-  }
-);
+  },
+];
 
-/**
- * LOGOUT
- */
-router.get("/logout", (req: Request, res: Response, next: NextFunction) => {
+export const logout = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   req.logout(function (err: Error) {
     if (err) {
       logger.error(`Logout error: ${err}`);
@@ -245,10 +185,8 @@ router.get("/logout", (req: Request, res: Response, next: NextFunction) => {
         res.status(500).json({ message: "Error logging out" });
         return;
       }
-      res.clearCookie("connect.sid", { path: "/" }); // Adjust cookie name if different
+      res.clearCookie("connect.sid", { path: "/" });
       res.redirect(FRONTEND_URL);
     });
   });
-});
-
-export default router;
+};

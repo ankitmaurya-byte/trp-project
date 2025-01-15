@@ -10,13 +10,10 @@ connectDB().then(() => {
   const app = createApp();
   app.use(
     cors({
-      origin: "*",
+      origin: "http://localhost:3000",
       credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
-
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });

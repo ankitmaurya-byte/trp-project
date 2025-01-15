@@ -1,9 +1,15 @@
 import React from "react";
+import JobCard from "../components/JobCard";
+import FeaturesSection from "../components/FeatureSection";
+import { Box, Typography, Grid, Container } from "@mui/material";
+import HeroBanner from "../components/HeroBanner";
 
-type Props = {};
-
-const Home = (props: Props) => {
-  return <div className="h-screen text-black">this is home page</div>;
+const Home: React.FC = () => {
+  return (
+    <>
+      <HeroBanner />
+    </>
+  );
 };
 
 export default Home;

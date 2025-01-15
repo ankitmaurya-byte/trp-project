@@ -12,8 +12,13 @@ export const isAuthenticated = (
 };
 
 export const authorize =
-  (roles: string[]) => (req: Request, res: Response, next: NextFunction) => {
-    if (roles.includes(req.user?.role)) {
+  (roles: string[]) =>
+  (
+    req: Request & { user?: { role?: string } },
+    res: Response,
+    next: NextFunction
+  ) => {
+    if (req.user && req.user.role && roles.includes(req.user.role)) {
       return next();
     }
     res.status(403).json({ message: "Forbidden" });

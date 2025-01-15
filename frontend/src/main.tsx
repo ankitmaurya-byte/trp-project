@@ -5,6 +5,14 @@ import App from "./App.tsx";
 import { Provider } from "react-redux";
 import store from "./store/store.ts";
 import { BrowserRouter } from "react-router-dom";
+import WebFont from "webfontloader";
+
+WebFont.load({
+  google: {
+    families: ["Poppins:300,400,500,600,700"],
+  },
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
