@@ -8,9 +8,22 @@ const ApplicationSchema = new mongoose.Schema(
       ref: "Candidate",
       required: true,
     },
+    readytorelocate: { type: Boolean, default: false },
+    resume: { type: String },
+    coverletter: { type: String },
+
+    messages: [
+      {
+        candimessagedBy: { type: String, enum: ["candidate", "recruiter"] },
+        date: { type: Date },
+        time: { type: String },
+        location: { type: String },
+        status: { type: String, enum: ["sent", "viewed", "delivered"] },
+      },
+    ],
     status: {
       type: String,
-      enum: ["applied", "shortlisted", "rejected", "hired"],
+      enum: ["applied", "shortlisted", "rejected", "hired", "viewed"],
       default: "applied",
     },
     notes: { type: String },

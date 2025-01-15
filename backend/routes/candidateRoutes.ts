@@ -18,6 +18,10 @@ router.get(
   viewCandidates
 );
 
+// getAllJobs
+
+// getMessage
+
 // Create or update candidate profile (candidates only)
 router.post(
   "/profile",

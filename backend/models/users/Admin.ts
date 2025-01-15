@@ -1,19 +1,28 @@
-// backend/models/User.ts
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
-export interface IUser extends Document {
+// Interface for Admin
+export interface Admin extends Document {
   username: string;
   email?: string;
   password?: string;
   googleId?: string;
   githubId?: string;
   linkedinId?: string;
-  role: "admin" | "recruiter" | "candidate";
+  notification: {
+    title: string;
+    message: string;
+    time: Date;
+    status: "read" | "unread";
+  }[];
+  permissions: string; // Permissions field for admins
   comparePassword(candidatePassword: string): Promise<boolean>;
+  resetPasswordToken: string;
+  resetPasswordExpires: Date;
 }
 
-const UserSchema: Schema<IUser> = new Schema(
+// Admin schema definition
+const adminSchema: Schema<Admin> = new Schema(
   {
     username: { type: String, required: true },
     email: { type: String, unique: true, sparse: true },
@@ -21,16 +30,23 @@ const UserSchema: Schema<IUser> = new Schema(
     googleId: { type: String },
     githubId: { type: String },
     linkedinId: { type: String },
-    role: {
-      type: String,
-      enum: ["admin", "recruiter", "candidate"],
-      default: "candidate",
-    },
+    notification: [
+      {
+        title: String,
+        message: String,
+        time: Date,
+        status: { type: String, enum: ["read", "unread"] },
+      },
+    ],
+    permissions: { type: String, default: "full" }, // Admin specific permissions
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );
+
 // Pre-save hook to hash password
-UserSchema.pre<IUser>("save", async function (next) {
+adminSchema.pre<Admin>("save", async function (next) {
   if (!this.isModified("password")) return next();
 
   try {
@@ -43,11 +59,11 @@ UserSchema.pre<IUser>("save", async function (next) {
 });
 
 // Instance method to compare password
-UserSchema.methods.comparePassword = async function (
+adminSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model<IUser>("User", UserSchema);
+export default mongoose.model<Admin>("Admin", adminSchema);

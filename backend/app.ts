@@ -1,7 +1,7 @@
 import express, { Express } from "express";
 import auth from "./routes/authRoutes";
 import candidates from "./routes/candidateRoutes";
-import jobRoutes from "./routes/jobRoutes";
+import jobRoutes from "./routes/recuriterRoutes";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "passport";

@@ -4,8 +4,6 @@ import passport from "../config/passport";
 import { body, validationResult } from "express-validator";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import logger from "../utils/logger";
-import User from "../models/User";
 import {
   register,
   login,
@@ -13,9 +11,9 @@ import {
   githubCallback,
   linkedinCallback,
   logout,
-  linkedinAuth,
-  githubAuth,
-  googleAuth,
+  googleAuthWithRole,
+  linkedinAuthWithRole,
+  githubAuthWithRole,
 } from "../controllers/authController";
 
 dotenv.config();
@@ -85,7 +83,7 @@ router.post(
 /**
  * GOOGLE AUTHENTICATION
  */
-router.get("/google", googleAuth);
+router.get("/google", googleAuthWithRole);
 
 router.get(
   "/google/callback",
@@ -96,14 +94,14 @@ router.get(
 /**
  * GITHUB AUTHENTICATION
  */
-router.get("/github", githubAuth);
+router.get("/github", githubAuthWithRole);
 
 router.get("/github/callback", githubCallback);
 
 /**
  * LINKEDIN AUTHENTICATION
  */
-router.get("/linkedin", linkedinAuth);
+router.get("/linkedin", linkedinAuthWithRole);
 
 router.get(
   "/linkedin/callback",

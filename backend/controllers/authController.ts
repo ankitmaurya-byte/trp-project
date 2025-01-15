@@ -1,31 +1,13 @@
 // backend/controllers/authController.ts
 import express, { Request, Response, NextFunction } from "express";
 import passport from "../config/passport";
-import { body, validationResult } from "express-validator";
-import rateLimit from "express-rate-limit";
+import { validationResult } from "express-validator";
 import dotenv from "dotenv";
 import logger from "../utils/logger";
-import User from "../models/User";
-
+import Candidate from "../models/users/Candidate";
 dotenv.config();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-
-// Rate limiter for registration route
-const registerLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message:
-    "Too many registration attempts from this IP, please try again after 15 minutes",
-});
-
-// Rate limiter for login route
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message:
-    "Too many login attempts from this IP, please try again after 15 minutes",
-});
 
 export const register = async (
   req: Request,
@@ -44,14 +26,14 @@ export const register = async (
   const { username, email, password } = req.body;
 
   try {
-    const existingUser = await User.findOne({ email });
+    const existingUser = await Candidate.findOne({ email });
     if (existingUser) {
       logger.warn(`Registration attempt with existing email: ${email}`);
       res.status(400).json({ message: "Email is already in use." });
       return;
     }
 
-    const newUser = new User({ username, email, password });
+    const newUser = new Candidate({ username, email, password });
     await newUser.save();
 
     req.logIn(newUser, (err: Error) => {
@@ -124,11 +106,31 @@ export const login = async (
   )(req, res, next);
 };
 
-export const googleAuth = passport.authenticate("google", {
-  scope: ["profile", "email"],
-  prompt: "select_account",
-});
+// export const googleAuth = passport.authenticate("google", {
+//   scope: ["profile", "email"],
+//   prompt: "select_account",
+// });
+export const googleAuthWithRole = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  console.log(req.query);
 
+  const { role } = req.query; // The role will be 'candidate' or 'recruiter'
+
+  // Ensure that role is provided
+  if (!role) {
+    res.status(400).json({ error: "Role is required" });
+    return;
+  }
+  const scope = "email profile openid";
+  // Redirect to Google OAuth with the state parameter
+  passport.authenticate("google", {
+    state: JSON.stringify({ role }), // Pass the role as part of the state parameter
+    scope,
+  })(req, res, next);
+};
 export const googleCallback = [
   passport.authenticate("google", {
     failureRedirect: `${FRONTEND_URL}/login`,
@@ -140,9 +142,28 @@ export const googleCallback = [
   },
 ];
 
-export const githubAuth = passport.authenticate("github", {
-  scope: ["user:email"],
-});
+// export const githubAuth = passport.authenticate("github", {
+//   scope: ["user:email"],
+// });
+
+export const githubAuthWithRole = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const { role } = req.query; // The role will be 'candidate' or 'recruiter'
+
+  // Ensure that role is provided
+  if (!role) {
+    res.status(400).json({ error: "Role is required" });
+    return;
+  }
+
+  // Redirect to Google OAuth with the state parameter
+  passport.authenticate("github", {
+    state: JSON.stringify({ role }), // Pass the role as part of the state parameter
+  })(req, res, next);
+};
 
 export const githubCallback = [
   passport.authenticate("github", {
@@ -155,8 +176,26 @@ export const githubCallback = [
   },
 ];
 
-export const linkedinAuth = passport.authenticate("linkedin");
+// export const linkedinAuth = passport.authenticate("linkedin");
+export const linkedinAuthWithRole = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const { role } = req.query; // The role will be 'candidate' or 'recruiter'
 
+  // Ensure that role is provided
+  if (!role) {
+    res.status(400).json({ error: "Role is required" });
+    return;
+  }
+  const scope = ["r_emailaddress", "r_liteprofile"];
+  // Redirect to LinkedIn OAuth with the state parameter
+  passport.authenticate("linkedin", {
+    state: JSON.stringify({ role }), // Pass the role as part of the state parameter
+    scope,
+  })(req, res, next);
+};
 export const linkedinCallback = [
   passport.authenticate("linkedin", {
     failureRedirect: `${FRONTEND_URL}/login`,

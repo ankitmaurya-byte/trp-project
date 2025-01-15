@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Candidate from "../models/Candidate";
+import Candidate from "../models/users/Candidate";
 
 // interface AuthenticatedRequest {
 //   user?: {

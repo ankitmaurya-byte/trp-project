@@ -1,11 +1,9 @@
-// backend/config/passport.ts
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import {
   Strategy as GoogleStrategy,
   Profile as GoogleProfile,
 } from "passport-google-oauth20";
-
 import {
   Strategy as LinkedInStrategy,
   Profile as LinkedInProfile,
@@ -15,9 +13,11 @@ import {
   Strategy as GitHubStrategy,
   Profile as GitHubProfile,
 } from "passport-github2";
-import User, { IUser } from "../models/User";
+
 import dotenv from "dotenv";
-import { IncomingMessage } from "http";
+import findOrCreateUser from "../utils/helper/findOrCreate"; // Import the utility function
+import Recruiter from "../models/users/Recruiter";
+import Candidate from "../models/users/Candidate";
 
 // Load environment variables
 dotenv.config();
@@ -29,10 +29,11 @@ passport.serializeUser((user: any, done) => {
 
 // Deserialize user from the session
 passport.deserializeUser(
-  async (id: string, done: (err: any, user?: IUser | null) => void) => {
+  async (id: string, done: (err: any, user?: any | null) => void) => {
     try {
-      const user = await User.findById(id);
-      done(null, user);
+      const recruiterUser = await Recruiter.findById(id).exec();
+      const candidateUser = await Candidate.findById(id).exec();
+      done(null, recruiterUser || candidateUser);
     } catch (err) {
       done(err, null);
     }
@@ -44,20 +45,32 @@ passport.deserializeUser(
  */
 passport.use(
   new LocalStrategy(
-    { usernameField: "email" }, // Use 'email' instead of default 'username'
-    async (
-      email: string,
-      password: string,
-      done: (
-        error: any,
-        user?: IUser | false,
-        options?: { message: string }
-      ) => void
-    ) => {
+    { usernameField: "email", passReqToCallback: true },
+    async (req: any, email: string, password: string, done: any) => {
       try {
-        const user = await User.findOne({ email });
-        if (!user) {
-          return done(null, false, { message: "Incorrect email or password." });
+        const { role } = req.body;
+        let user;
+
+        if (role === "recruiter") {
+          user = await Recruiter.findOne({ email }).exec();
+          if (!user) {
+            user = new Recruiter({
+              email,
+              password,
+              role,
+            });
+            await user.save();
+          }
+        } else {
+          user = await Candidate.findOne({ email }).exec();
+          if (!user) {
+            user = new Candidate({
+              email,
+              password,
+              role,
+            });
+            await user.save();
+          }
         }
 
         if (!user.password) {
@@ -71,7 +84,10 @@ passport.use(
           return done(null, false, { message: "Incorrect email or password." });
         }
 
-        return done(null, user);
+        req.login(user, (err: any) => {
+          if (err) return done(err);
+          return done(null, user);
+        });
       } catch (err) {
         return done(err);
       }
@@ -79,49 +95,34 @@ passport.use(
   )
 );
 
-/**
- * GOOGLE OAUTH STRATEGY
- */
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
+      passReqToCallback: true,
     },
     async (
+      req: any,
       accessToken: string,
       refreshToken: string,
       profile: GoogleProfile,
-      done: (error: any, user?: IUser | false) => void
+      done: (error: any, user?: any | false) => void
     ) => {
       try {
-        const existingUser = await User.findOne({ googleId: profile.id });
-        if (existingUser) {
-          return done(null, existingUser);
-        }
+        console.log("this is google");
+        console.log(req.query);
 
-        // If user with the same email exists, link accounts
-        const email = profile.emails?.[0].value;
-        if (email) {
-          const userWithEmail = await User.findOne({ email });
-          if (userWithEmail) {
-            userWithEmail.googleId = profile.id;
-            await userWithEmail.save();
-            return done(null, userWithEmail);
-          }
-        }
+        const { role } = JSON.parse(req.query.state as string);
 
-        // Create a new user
-        const newUser = new User({
-          username: profile.displayName,
-          email: profile.emails?.[0].value,
-          googleId: profile.id,
-          // Add other fields as needed
+        const user = await findOrCreateUser(role, profile, "googleId");
+
+        // Explicitly typing the `err` parameter as `Error | null`
+        req.login(user, (err: Error | null) => {
+          if (err) return done(err);
+          return done(null, user);
         });
-
-        await newUser.save();
-        return done(null, newUser);
       } catch (err) {
         return done(err, false);
       }
@@ -129,9 +130,8 @@ passport.use(
   )
 );
 
-/**
- * GITHUB OAUTH STRATEGY
- */
+// Repeat similar changes for GitHub, LinkedIn strategies
+
 passport.use(
   new GitHubStrategy(
     {
@@ -139,44 +139,25 @@ passport.use(
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
       callbackURL: process.env.GITHUB_CALLBACK_URL as string,
       scope: ["user:email"],
+      passReqToCallback: true,
     },
     async (
+      req: any,
       accessToken: string,
       refreshToken: string,
       profile: GitHubProfile,
-      done: (error: any, user?: IUser | false) => void
+      done: (error: any, user?: any | false) => void
     ) => {
       try {
-        const existingUser = await User.findOne({ githubId: profile.id });
-        if (existingUser) {
-          return done(null, existingUser);
-        }
+        const { role } = JSON.parse(req.query.state as string);
 
-        // Get primary email
-        const emailObj =
-          profile.emails?.find((email) => email.value) || profile.emails?.[0];
-        const email = emailObj?.value;
+        const user = await findOrCreateUser(role, profile, "githubId");
 
-        // If user with the same email exists, link accounts
-        if (email) {
-          const userWithEmail = await User.findOne({ email });
-          if (userWithEmail) {
-            userWithEmail.githubId = profile.id;
-            await userWithEmail.save();
-            return done(null, userWithEmail);
-          }
-        }
-
-        // Create a new user
-        const newUser = new User({
-          username: profile.username || profile.displayName,
-          email: email,
-          githubId: profile.id,
-          // Add other fields as needed
+        // Explicitly typing the `err` parameter as `Error | null`
+        req.login(user, (err: Error | null) => {
+          if (err) return done(err);
+          return done(null, user);
         });
-
-        await newUser.save();
-        return done(null, newUser);
       } catch (err) {
         return done(err, false);
       }
@@ -184,9 +165,6 @@ passport.use(
   )
 );
 
-/**
- * LINKEDIN OAUTH STRATEGY
- */
 passport.use(
   new LinkedInStrategy(
     {
@@ -194,42 +172,25 @@ passport.use(
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET as string,
       callbackURL: process.env.LINKEDIN_CALLBACK_URL as string,
       scope: ["r_emailaddress", "r_liteprofile"],
+      passReqToCallback: true,
     },
     async (
+      req: any,
       accessToken: string,
       refreshToken: string,
       profile: LinkedInProfile,
-      done: (error: any, user?: IUser | false) => void
+      done: (error: any, user?: any | false) => void
     ) => {
       try {
-        const existingUser = await User.findOne({ linkedinId: profile.id });
-        if (existingUser) {
-          return done(null, existingUser);
-        }
+        const { role } = JSON.parse(req.query.state as string);
 
-        // Get email
-        const email = profile.emails?.[0].value;
+        const user = await findOrCreateUser(role, profile, "linkedinId");
 
-        // If user with the same email exists, link accounts
-        if (email) {
-          const userWithEmail = await User.findOne({ email });
-          if (userWithEmail) {
-            userWithEmail.linkedinId = profile.id;
-            await userWithEmail.save();
-            return done(null, userWithEmail);
-          }
-        }
-
-        // Create a new user
-        const newUser = new User({
-          username: profile.displayName,
-          email: email,
-          linkedinId: profile.id,
-          // Add other fields as needed
+        // Explicitly typing the `err` parameter as `Error | null`
+        req.login(user, (err: Error | null) => {
+          if (err) return done(err);
+          return done(null, user);
         });
-
-        await newUser.save();
-        return done(null, newUser);
       } catch (err) {
         return done(err, false);
       }
