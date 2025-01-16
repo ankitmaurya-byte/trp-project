@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from "react-router-dom";
 
-import Header from "../pages/Header";
+import Header from "./Header";
+import Footer from "./Footer";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -9,8 +10,8 @@ const Layout = () => {
       {/* Header Section */}
       <Header />
       {/* Main Content Section */}
-
       <Outlet />
+      <Footer />
     </>
   );
 };
