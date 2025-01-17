@@ -1,9 +1,9 @@
 import React from "react";
-import JobCard from "../components/JobCard";
 import FeaturesSection from "../components/home/FeatureSection";
-import { Box, Typography, Grid, Container } from "@mui/material";
+
 import HeroBanner from "../components/home/HeroBanner";
 import Benifits from "../components/home/Benifits";
+import Jobs from "../components/home/Jobs";
 
 const Home: React.FC = () => {
   return (
@@ -11,6 +11,7 @@ const Home: React.FC = () => {
       <HeroBanner />
       <FeaturesSection />
       <Benifits />
+      <Jobs />
     </>
   );
 };

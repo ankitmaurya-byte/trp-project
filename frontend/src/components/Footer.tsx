@@ -4,7 +4,7 @@ import { ImLinkedin } from "react-icons/im";
 
 const Footer: React.FC = () => {
   return (
-    <footer className="w-screen h-[195px] bg-[#153d52] p-10 mt-[742px]">
+    <footer className="w-screen h-[195px] bg-[#153d52] p-10 ">
       <div className="w-full flex justify-between items-center text-white">
         <img src={logo} alt="TRP Logo" className="w-20 h-auto" />
 

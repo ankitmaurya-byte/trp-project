@@ -13,7 +13,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="w-screen  h-[75px] fixed left-0 top-0 bg-white mx-auto">
+    <header className="w-screen  h-[75px] fixed left-0 top-0 bg-white mx-auto z-10">
       <div className="h-full px-6 py-5 flex justify-between items-center ">
         {/* Logo */}
         <div>
@@ -37,12 +37,12 @@ const Header: React.FC = () => {
           </button>
           <button
             onClick={() => navigate("/employers")}
-            className="w-[34px] h-[21px] flex-grow-0 opacity-80 font-poppins text-[14px] font-medium text-[#153d52] text-center"
+            className="w-[34px] h-[21px] flex-grow-0 opacity-80 font-poppins text-[14px] font-medium text-[#153d52] mr-6 text-center"
           >
             Employers
           </button>
           {/* Auth Buttons */}
-          <div className="w-64 h-[35px] flex flex-row justify-around items-center gap-[20px] p-0">
+          <div className="w-64 h-[35px] flex flex-row justify-evenly items-center gap-[20px] p-0">
             <button
               className="w-[104px] h-[35px] flex flex-row justify-center items-center gap-[10px] px-[23px]  rounded-[8px] border border-[rgba(21,61,82,0.2)] bg-white"
               onClick={() => navigate("/login")}

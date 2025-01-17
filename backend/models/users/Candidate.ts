@@ -6,9 +6,9 @@ export interface Candidate extends Document {
   username: string;
   email?: string;
   password?: string;
-  googleId?: string;
-  githubId?: string;
-  linkedinId?: string;
+  provider?: string;
+  providerId?: string;
+  contact?: string;
   yearOfExperience?: string;
   noticePeriod?: string;
   currentLocation?: string;
@@ -47,7 +47,6 @@ export interface Candidate extends Document {
     }
   ];
   jobsApplied: Schema.Types.ObjectId[]; // Referencing Job model
-  messages: Schema.Types.ObjectId[]; // Referencing Message model
   comparePassword(candidatePassword: string): Promise<boolean>;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -59,12 +58,12 @@ const candidateSchema: Schema<Candidate> = new Schema(
     username: { type: String, required: true },
     email: { type: String, unique: true, sparse: true },
     password: { type: String },
-    googleId: { type: String },
-    githubId: { type: String },
-    linkedinId: { type: String },
+    provider: { type: String },
+    providerId: { type: String },
     yearOfExperience: { type: String },
     noticePeriod: { type: String },
     currentLocation: { type: String },
+    contact: { type: Number },
     skills: [{ type: String }],
     notification: [
       {
@@ -106,7 +105,6 @@ const candidateSchema: Schema<Candidate> = new Schema(
       },
     ],
     jobsApplied: [{ type: Schema.Types.ObjectId, ref: "Job" }],
-    messages: [{ type: Schema.Types.ObjectId, ref: "Message" }],
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
   },

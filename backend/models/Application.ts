@@ -1,4 +1,22 @@
-import mongoose from "mongoose";
+import mongoose, { Document } from "mongoose";
+
+interface IApplication extends Document {
+  job: mongoose.Types.ObjectId;
+  candidate: mongoose.Types.ObjectId;
+  readytorelocate: boolean;
+  resume?: string;
+  coverletter?: string;
+  recruiter: mongoose.Types.ObjectId;
+  messages: {
+    candimessagedBy: "candidate" | "recruiter";
+    date: Date;
+    time: string;
+    location: string;
+    status: "sent" | "viewed" | "delivered";
+  }[];
+  status: "applied" | "shortlisted" | "rejected" | "hired" | "viewed";
+  notes?: string;
+}
 
 const ApplicationSchema = new mongoose.Schema(
   {
@@ -31,4 +49,4 @@ const ApplicationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Application", ApplicationSchema);
+export default mongoose.model<IApplication>("Application", ApplicationSchema);

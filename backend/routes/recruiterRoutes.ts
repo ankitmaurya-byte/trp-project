@@ -24,6 +24,8 @@ router.post("/create_job", authenticate, authorize(["recruiter"]), createJob);
 
 // get all application of particular job
 
+// get particular candidate
+
 // Fetch all jobs (accessible to all roles)
 router.get("/get_all_job", authenticate, getAllJobs);
 

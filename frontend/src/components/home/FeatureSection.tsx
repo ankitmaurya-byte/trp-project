@@ -35,89 +35,27 @@ const features = [
 
 const FeaturesSection: React.FC = () => {
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "auto",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "flex-start",
-        alignItems: "flex-start",
-        gap: "10px",
-        padding: "10% 5%",
-        backgroundColor: "#153d52",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          textAlign: "center",
-          fontFamily: "Poppins",
-          fontSize: "2.5rem",
-          fontWeight: "bold",
-          lineHeight: 1.8,
-          color: "#fff",
-          marginBottom: "40px",
-        }}
-      >
-        Why TRP Rating Matters
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          gap: "20px",
-          width: "100%",
-        }}
-      >
-        {features.map((feature, index) => (
-          <div
-            key={index}
-            style={{
-              width: "100%",
-              maxWidth: "350px",
-              height: "auto",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              alignItems: "center",
-              gap: "16px",
-              padding: "20px",
-              borderRadius: "12px",
-              border: "solid 1px #375565",
-              backgroundColor: "#1d5f6e",
-              color: "#fff",
-            }}
-          >
+    <div className=" w-full h-[741px] flex flex-col justify-start items-start gap-10 mt-14 pt-[79px] px-10 bg-[#153d52] mx-auto">
+      <div className="max-w-[1366px] w-full h-full m-auto">
+        <div className="w-full text-center font-poppins text-3xl sm:text-4xl font-bold leading-[1.8] text-white mb-10">
+          Why TRP Rating Matters
+        </div>
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature, index) => (
             <div
-              style={{
-                fontSize: "40px",
-                color: "#f9f9f9",
-              }}
+              key={index}
+              className="h-[201px] flex flex-col justify-start items-stretch gap-4 p-5 rounded-xl border border-[#375565]  text-white"
             >
-              {feature.icon}
+              <div className="text-[40px] text-[#f9f9f9] text-start">
+                {feature.icon}
+              </div>
+              <div className=" text-start text-lg font-semibold">
+                {feature.title}
+              </div>
+              <div className="text-sm text-start">{feature.description}</div>
             </div>
-            <div
-              style={{
-                fontSize: "1.25rem",
-                fontWeight: "bold",
-                textAlign: "center",
-              }}
-            >
-              {feature.title}
-            </div>
-            <div
-              style={{
-                fontSize: "1rem",
-                textAlign: "center",
-                lineHeight: 1.5,
-              }}
-            >
-              {feature.description}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -6,8 +6,8 @@ export interface Recruiter extends Document {
   username: string;
   email: string;
   password?: string;
-  googleId?: string;
-  githubId?: string;
+  provider?: string;
+  providerId?: string;
   linkedinId?: string;
   notification: {
     title: string;
@@ -35,9 +35,8 @@ const recruiterSchema: Schema<Recruiter> = new Schema(
     username: { type: String, required: true },
     email: { type: String, unique: true, sparse: true },
     password: { type: String },
-    googleId: { type: String },
-    githubId: { type: String },
-    linkedinId: { type: String },
+    provider: { type: String },
+    providerId: { type: String },
     emailTemplates: [
       {
         template: { type: Schema.Types.ObjectId, ref: "EmailTemplate" },
@@ -46,8 +45,9 @@ const recruiterSchema: Schema<Recruiter> = new Schema(
         folderName: { type: String },
       },
     ],
+
     contactNumber: { type: Number },
-    company: { type: String, required: true },
+    company: { type: String },
     jobsPosted: [{ type: Schema.Types.ObjectId, ref: "Job" }],
     notification: [
       { title: String, message: String, time: Date, status: String },

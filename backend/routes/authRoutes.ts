@@ -11,10 +11,11 @@ import {
   githubCallback,
   linkedinCallback,
   logout,
-  googleAuthWithRole,
-  linkedinAuthWithRole,
-  githubAuthWithRole,
+  googleAuth,
+  linkedinAuth,
+  githubAuth,
 } from "../controllers/authController";
+import { isAuthenticated } from "../middlewares/authMiddleware";
 
 dotenv.config();
 
@@ -83,7 +84,7 @@ router.post(
 /**
  * GOOGLE AUTHENTICATION
  */
-router.get("/google", googleAuthWithRole);
+router.get("/google", googleAuth);
 
 router.get(
   "/google/callback",
@@ -94,14 +95,14 @@ router.get(
 /**
  * GITHUB AUTHENTICATION
  */
-router.get("/github", githubAuthWithRole);
+router.get("/github", githubAuth);
 
 router.get("/github/callback", githubCallback);
 
 /**
  * LINKEDIN AUTHENTICATION
  */
-router.get("/linkedin", linkedinAuthWithRole);
+router.get("/linkedin", linkedinAuth);
 
 router.get(
   "/linkedin/callback",

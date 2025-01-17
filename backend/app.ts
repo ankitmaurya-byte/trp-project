@@ -1,13 +1,13 @@
 import express, { Express } from "express";
 import auth from "./routes/authRoutes";
 import candidates from "./routes/candidateRoutes";
-import jobRoutes from "./routes/recuriterRoutes";
+import jobRoutes from "./routes/recruiterRoutes";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import passport from "passport";
 import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
-import "./config/passport";
+// import passport from "./config/passport";
+import passport from "passport";
 import errorHandler from "./middlewares/errorHandler";
 
 export function createApp(): Express {
@@ -38,6 +38,10 @@ export function createApp(): Express {
   app.use("/api/v1/auth", auth);
   app.use("/api/v1", candidates);
   app.use("/api/v1", jobRoutes);
+  app.get("/", (req, res) => {
+    console.log(req.user);
+    res.send("thankyou");
+  });
   app.use(errorHandler);
   return app;
 }

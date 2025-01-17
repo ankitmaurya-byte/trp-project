@@ -15,31 +15,75 @@ import {
 } from "passport-github2";
 
 import dotenv from "dotenv";
-import findOrCreateUser from "../utils/helper/findOrCreate"; // Import the utility function
+import findOrCreateUser from "../utils/helper/ssoHandler"; // Import the utility function
 import Recruiter from "../models/users/Recruiter";
 import Candidate from "../models/users/Candidate";
+import handleSSOAuth from "../utils/helper/ssoHandler";
 
 // Load environment variables
 dotenv.config();
 
 // Serialize user into the session
 passport.serializeUser((user: any, done) => {
-  done(null, user.id);
+  console.log("serialize");
+  console.log(user);
+  console.log("serialize");
+  done(null, { id: user.user.id, role: user.role });
 });
 
-// Deserialize user from the session
-passport.deserializeUser(
-  async (id: string, done: (err: any, user?: any | null) => void) => {
-    try {
-      const recruiterUser = await Recruiter.findById(id).exec();
-      const candidateUser = await Candidate.findById(id).exec();
-      done(null, recruiterUser || candidateUser);
-    } catch (err) {
-      done(err, null);
-    }
-  }
-);
+passport.deserializeUser(async (data: { id: string; role: string }, done) => {
+  try {
+    console.log("deserializeUser");
+    console.log(data); // Logs { id: ..., role: ... }
 
+    const { id, role } = data;
+
+    // Fetch user based on id and role
+    let user = null;
+    if (role === "candidate") {
+      user = await Candidate.findById(id);
+    } else if (role === "recruiter") {
+      user = await Recruiter.findById(id);
+    }
+
+    if (user) {
+      done(null, { id: user.id, role, ...user.toObject() }); // Pass complete user object to req.user
+    } else {
+      done(null, false); // User not found
+    }
+  } catch (err) {
+    done(err);
+  }
+}); // Deserialize user from the session
+// passport.deserializeUser(
+//   async (serializedUser: { id: string; role: string }, done) => {
+//     try {
+//       let user;
+//       console.log("serializedUser");
+//       console.log(serializedUser);
+
+//       switch (serializedUser.role) {
+//         case "candidate":
+//           user = await Candidate.findById(serializedUser.id);
+//           break;
+//         case "recruiter":
+//           user = await Recruiter.findById(serializedUser.id);
+//           break;
+//         default:
+//           return done(null, user);
+//         // return done(new Error("Invalid role"), null);
+//       }
+
+//       if (!user) {
+//         return done(null, false);
+//       }
+
+//       done(null, user);
+//     } catch (err) {
+//       done(err, null);
+//     }
+//   }
+// );
 /**
  * LOCAL STRATEGY
  */
@@ -69,7 +113,8 @@ passport.use(
               password,
               role,
             });
-            await user.save();
+            const savedUser = await user.save();
+            return { user: savedUser, role };
           }
         }
 
@@ -111,18 +156,19 @@ passport.use(
       done: (error: any, user?: any | false) => void
     ) => {
       try {
-        console.log("this is google");
-        console.log(req.query);
-
         const { role } = JSON.parse(req.query.state as string);
 
-        const user = await findOrCreateUser(role, profile, "googleId");
+        const user = await handleSSOAuth(profile, "google", role);
 
         // Explicitly typing the `err` parameter as `Error | null`
-        req.login(user, (err: Error | null) => {
-          if (err) return done(err);
-          return done(null, user);
-        });
+        // console.log("profile", profile);
+
+        // req.login(user, (err: Error | null) => {
+        //   if (err) return done(err);
+        //   console.log("stragey");
+        //   console.log(user);
+        return done(null, { user, role });
+        // });
       } catch (err) {
         return done(err, false);
       }
@@ -151,7 +197,7 @@ passport.use(
       try {
         const { role } = JSON.parse(req.query.state as string);
 
-        const user = await findOrCreateUser(role, profile, "githubId");
+        const user = await handleSSOAuth(profile, "github", role);
 
         // Explicitly typing the `err` parameter as `Error | null`
         req.login(user, (err: Error | null) => {
@@ -184,7 +230,7 @@ passport.use(
       try {
         const { role } = JSON.parse(req.query.state as string);
 
-        const user = await findOrCreateUser(role, profile, "linkedinId");
+        const user = await handleSSOAuth(profile, "linkedin", role);
 
         // Explicitly typing the `err` parameter as `Error | null`
         req.login(user, (err: Error | null) => {
